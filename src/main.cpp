@@ -11,7 +11,10 @@ int main(int argc, char **argv) {
         auto &out = argc != 2 ? std::cerr : std::cout;
         out << "Dump the content of a shared memory to stdout" << std::endl;
         out << "usage: " << std::endl;
-        out << "    dump_shm <shm_name>" << std::endl;
+        out << "    dump_shm [OPTION...] <shm_name>" << std::endl;
+        out << std::endl;
+        out << "    -h  --help     print this message" << std::endl;
+        out << "    -v  --version  print version" << std::endl;
         out << std::endl;
         out << std::endl;
         out << "MIT License:" << std::endl;
@@ -35,7 +38,12 @@ int main(int argc, char **argv) {
         out << "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM," << std::endl;
         out << "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE" << std::endl;
         out << "SOFTWARE." << std::endl;
-        exit(EX_USAGE);
+        exit(argc != 2 ? EX_USAGE : EX_OK);
+    }
+
+    if (std::string(argv[1]) == "-v" || (std::string(argv[1])) == "--version") {
+        std::cout << "dump_shm " << PROJECT_VERSION << std::endl;
+        exit(EX_OK);
     }
 
     const std::string name = argv[1];
