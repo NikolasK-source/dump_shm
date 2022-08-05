@@ -12,7 +12,7 @@ dump-shm | hexdump -C -v
 
 ## Using the Flatpak package
 The flatpak package can be installed via the .flatpak file.
-This can be downloaded from the GitHub [projects release page](https://github.com/NikolasK-source/dump-shm/releases):
+This can be downloaded from the GitHub [projects release page](https://github.com/NikolasK-source/dump_shm/releases):
 
 ```
 flatpak install --user dump-shm.flatpak
@@ -23,7 +23,7 @@ The application is then executed as follows:
 flatpak run network.koesling.dump-shm
 ```
 
-To enable calling with ```modbus-rtu-client-shm``` [this script](https://gist.github.com/NikolasK-source/6f323942544d5de39323771dceed4023) can be used.
+To enable calling with ```dump-shm``` [this script](https://gist.github.com/NikolasK-source/6f323942544d5de39323771dceed4023) can be used.
 In order to be executable everywhere, the path in which the script is placed must be in the ```PATH``` environment variable.
 
 
