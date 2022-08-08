@@ -7,8 +7,14 @@ To use the application, simply call it with the name of the shared memory to be 
 
 To display the content you can for example use ```hexdump```:
 ```
-dump-shm | hexdump -C -v
+dump-shm -n <name> | hexdump -C -v
 ```
+
+Under linux the following command has the same effect:
+```
+cat /dev/shm/<name> | hexdump -C -v
+```
+
 
 ## Using the Flatpak package
 The flatpak package can be installed via the .flatpak file.
