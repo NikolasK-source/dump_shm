@@ -2,7 +2,7 @@ id: network.koesling.dump-shm
 runtime: org.freedesktop.Platform
 runtime-version: '21.08'
 sdk: org.freedesktop.Sdk
-command: dump_shm
+command: dump-shm
 finish-args:
   - --device=shm
 modules:
@@ -16,8 +16,7 @@ modules:
 
     # install
     - mkdir -p "${FLATPAK_DEST}/bin"
-    - cp build/dump_shm ${FLATPAK_DEST}/bin
-    - ls -lah ${FLATPAK_DEST}
+    - cp build/dump-shm ${FLATPAK_DEST}/bin
     sources:
       - type: git
         branch: release
