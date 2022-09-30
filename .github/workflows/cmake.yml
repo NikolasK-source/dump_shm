@@ -1,10 +1,6 @@
 name: CMake
 
-on:
-  push:
-    branches: [ "main", "development" ]
-  pull_request:
-    branches: [ "main" ]
+on: [push, pull_request]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -19,6 +15,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Init submodules
+      run: git submodule init
+
+    - name: Update submodules
+      run: git submodule update
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

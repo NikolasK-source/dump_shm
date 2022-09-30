@@ -4,11 +4,11 @@ cmake_minimum_required(VERSION 3.13.4 FATAL_ERROR)
 # ======================================================================================================================
 
 # project
-project(dump-shm LANGUAGES CXX VERSION 1.0.2)
+project(dump-shm LANGUAGES CXX VERSION 1.1.0)
 
 # settings
 set(Target "dump-shm")    # Executable name (without file extension!)
-set(STANDARD 11)                  # C++ Standard
+set(STANDARD 17)                  # C++ Standard
 set(ARCHITECTURE "native")        # CPU architecture to optimize for (only relevant if OPTIMIZE_FOR_ARCHITECTURE is ON)
 
 # options
