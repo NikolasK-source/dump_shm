@@ -6,43 +6,87 @@
 #include "license.hpp"
 
 #include <fcntl.h>
+#include <filesystem>
 #include <iostream>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sysexits.h>
 #include <unistd.h>
 
+// cxxopts, but all warnings disabled
+#ifdef COMPILER_CLANG
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Weverything"
+#elif defined(COMPILER_GCC)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wall"
+#endif
+
+#include <cxxopts.hpp>
+
+#ifdef COMPILER_CLANG
+#    pragma clang diagnostic pop
+#elif defined(COMPILER_GCC)
+#    pragma GCC diagnostic pop
+#endif
+
 int main(int argc, char **argv) {
-    if (argc != 2 || std::string(argv[1]) == "-h" || std::string(argv[1]) == "--help") {
-        auto &out = argc != 2 ? std::cerr : std::cout;
-        out << "Dump the content of a shared memory to stdout" << std::endl;
-        out << "usage: " << std::endl;
-        out << "    dump_shm [OPTION...] <shm_name>" << std::endl;
-        out << std::endl;
-        out << "    -h  --help     print this message" << std::endl;
-        out << "    -v  --version  print version" << std::endl;
-        out << "        --license  show license" << std::endl;
-        exit(argc != 2 ? EX_USAGE : EX_OK);
+    const std::string exe_name = std::filesystem::path(argv[0]).filename().string();
+    cxxopts::Options  options(exe_name, "Dump the content of a shared memory to stdout");
+
+    options.add_options()("b,bytes", "limit number of bytes to output", cxxopts::value<std::size_t>());
+    options.add_options()(
+            "o,offset", "do not output the leading arg bytes", cxxopts::value<std::size_t>()->default_value("0"));
+    options.add_options()("h,help", "print usage");
+    options.add_options()("version", "print version information");
+    options.add_options()("license", "show licences");
+
+    options.add_options()("shmname", "name of the shared memory to dump", cxxopts::value<std::string>());
+    options.parse_positional({"shmname"});
+    options.positional_help("SHM_NAME");
+
+    cxxopts::ParseResult opts;
+    try {
+        opts = options.parse(argc, argv);
+    } catch (const std::exception &e) {
+        std::cerr << "Failed to parse arguments: " << e.what() << std::endl;
+        std::cerr << "Use --help for more information." << std::endl;
+        return EX_USAGE;
     }
 
-    if (std::string(argv[1]) == "-v" || (std::string(argv[1])) == "--version") {
+    if (opts.count("help")) {
+        options.set_width(120);
+        std::cout << options.help() << std::endl;
+        std::cout << std::endl;
+        std::cout << "This application uses the following libraries:" << std::endl;
+        std::cout << "  - cxxopts by jarro2783 (https://github.com/jarro2783/cxxopts)" << std::endl;
+        return EX_OK;
+    }
+
+    if (opts.count("version")) {
         std::cout << PROJECT_NAME << ' ' << PROJECT_VERSION << " (compiled with " << COMPILER_INFO << " on "
                   << SYSTEM_INFO << ')' << std::endl;
         return EX_OK;
     }
 
-    if (std::string(argv[1]) == "--license") {
+    if (opts.count("license")) {
         print_licenses(std::cout);
-        exit(EX_OK);
+        return EX_OK;
     }
 
-    const std::string name = argv[1];
+    if (!opts.count("shmname")) {
+        std::cerr << "Shared memory name is mandatory." << std::endl;
+        std::cerr << "Use --help for more information." << std::endl;
+        return EX_USAGE;
+    }
+
+    const auto name = opts["shmname"].as<std::string>();
 
     // open shared memory
     int fd = shm_open(name.c_str(), O_RDWR, 0660);
     if (fd < 0) {
         perror("shm_open");
-        exit(EX_OSERR);
+        return EX_OSERR;
     }
 
     // get size of shared memory object
@@ -50,7 +94,7 @@ int main(int argc, char **argv) {
     if (fstat(fd, &shm_stats)) {
         if (close(fd)) { perror("close"); }
         perror("fstat");
-        exit(EX_OSERR);
+        return EX_OSERR;
     }
     const auto size = static_cast<std::size_t>(shm_stats.st_size);
 
@@ -59,11 +103,14 @@ int main(int argc, char **argv) {
     if (data == MAP_FAILED || data == nullptr) {
         if (close(fd)) { perror("close"); }
         perror("mmap");
-        exit(EX_OSERR);
+        return EX_OSERR;
     }
 
     // output data
-    std::cout.write(reinterpret_cast<const char *>(data), static_cast<std::streamsize>(size));
+    const auto offset     = opts["offset"].as<std::size_t>();
+    const auto bytes      = opts.count("bytes") ? opts["bytes"].as<std::size_t>() : size;
+    const auto write_size = std::min(size - offset, bytes);
+    std::cout.write(reinterpret_cast<const char *>(data) + offset, static_cast<std::streamsize>(write_size));
     std::cout.flush();
 
     // unmap and close shared memory object
