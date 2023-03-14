@@ -2,9 +2,15 @@
 
 This application dumps the content of a shared memory object to stdout.
 
-## Build
+## Build dependencies
+
+### Ubuntu/Debian
 ```
 apt update; apt install clang cmake build-essential
+```
+
+## Build
+```
 git submodule init
 git submodule update
 mkdir build
