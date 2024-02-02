@@ -5,13 +5,10 @@
 
 #include "license.hpp"
 
-#include <fcntl.h>
+#include "cxxshm.hpp"
 #include <filesystem>
 #include <iostream>
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <sysexits.h>
-#include <unistd.h>
 
 // cxxopts, but all warnings disabled
 #ifdef COMPILER_CLANG
@@ -60,6 +57,8 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
         std::cout << "This application uses the following libraries:" << std::endl;
         std::cout << "  - cxxopts by jarro2783 (https://github.com/jarro2783/cxxopts)" << std::endl;
+        std::cout << "  - cxxshm (https://github.com/NikolasK-source/cxxshm)" << std::endl;
+        std::cout << "  - cxxsemaphore (https://github.com/NikolasK-source/cxxsemaphore)" << std::endl;
         return EX_OK;
     }
 
@@ -82,38 +81,18 @@ int main(int argc, char **argv) {
 
     const auto name = opts["shmname"].as<std::string>();
 
-    // open shared memory
-    int fd = shm_open(name.c_str(), O_RDWR, 0660);
-    if (fd < 0) {
-        perror("shm_open");
-        return EX_OSERR;
-    }
-
-    // get size of shared memory object
-    struct stat shm_stats {};
-    if (fstat(fd, &shm_stats)) {
-        if (close(fd)) { perror("close"); }
-        perror("fstat");
-        return EX_OSERR;
-    }
-    const auto size = static_cast<std::size_t>(shm_stats.st_size);
-
-    // map shared memory
-    auto data = reinterpret_cast<uint8_t *>(mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0));
-    if (data == MAP_FAILED || data == nullptr) {
-        if (close(fd)) { perror("close"); }
-        perror("mmap");
-        return EX_OSERR;
+    std::unique_ptr<cxxshm::SharedMemory> shared_memory;
+    try {
+        shared_memory = std::make_unique<cxxshm::SharedMemory>(name, true);
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return EX_SOFTWARE;
     }
 
     // output data
     const auto offset     = opts["offset"].as<std::size_t>();
-    const auto bytes      = opts.count("bytes") ? opts["bytes"].as<std::size_t>() : size;
-    const auto write_size = std::min(size - offset, bytes);
-    std::cout.write(reinterpret_cast<const char *>(data) + offset, static_cast<std::streamsize>(write_size));
+    const auto bytes      = opts.count("bytes") ? opts["bytes"].as<std::size_t>() : shared_memory->get_size();
+    const auto write_size = std::min(shared_memory->get_size() - offset, bytes);
+    std::cout.write(shared_memory->get_addr<const char *>() + offset, static_cast<std::streamsize>(write_size));
     std::cout.flush();
-
-    // unmap and close shared memory object
-    if (munmap(data, size)) { perror("munmap"); }
-    if (close(fd)) { perror("close"); }
 }
