@@ -17,7 +17,12 @@ cat /dev/shm/<name> | hexdump -C -v
 
 ## Install
 
-### Using the Modbus Collection Flapak Package: Shared Memory Modbus
+### Using the Arch User Repository (recommended for Arch based Linux distributions)
+The application is available as [dump-shm](https://aur.archlinux.org/packages/dump-shm) in the [Arch User Repository](https://aur.archlinux.org/).
+See the [Arch Wiki](https://wiki.archlinux.org/title/Arch_User_Repository) for information about how to install AUR packages.
+
+
+### Using the Modbus Collection Flatpak Package: Shared Memory Modbus
 [SHM-Modbus](https://nikolask-source.github.io/SHM_Modbus/) is a collection of the shared memory modbus tools.
 It is available as flatpak and published on flathub as ```network.koesling.shm-modbs```.
 
