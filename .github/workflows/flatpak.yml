@@ -1,8 +1,5 @@
-on:
-  push:
-    branches: [release]
-  pull_request:
-name: Flatpak_release
+on: [push, pull_request]
+name: Flatpak_test
 jobs:
   flatpak:
     name: "Flatpak"
@@ -11,10 +8,14 @@ jobs:
       image: bilelmoussaoui/flatpak-github-actions:freedesktop-21.08
       options: --privileged
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+
+    - name: Git config
+      run: git config --global --add safe.directory /__w/dump_shm/dump_shm
+
     - uses: bilelmoussaoui/flatpak-github-actions/flatpak-builder@v4
       name: "Build"
       with:
-        bundle: dump-shm.flatpak
-        manifest-path: network.koesling.dump-shm.yml
+        bundle: test_dump-shm.flatpak
+        manifest-path: network.koesling.test-dump-shm.yml
         cache-key: flatpak-builder-${{ github.sha }}
