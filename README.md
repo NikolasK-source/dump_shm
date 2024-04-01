@@ -2,25 +2,23 @@
 
 This application dumps the content of a shared memory object to stdout.
 
-## Build dependencies
+## Dependencies
+- cxxopts by jarro2783 (https://github.com/jarro2783/cxxopts) (only required for building the application)
+- cxxshm (https://github.com/NikolasK-source/cxxshm)
+- cxxsemaphore (https://github.com/NikolasK-source/cxxsemaphore)
 
-### Ubuntu/Debian
-```
-apt update; apt install clang cmake build-essential
-```
+On Arch linux they are available via the official repositories and the AUR:
+- https://archlinux.org/packages/extra/any/cxxopts/
+- https://aur.archlinux.org/packages/cxxshm
+- https://aur.archlinux.org/packages/cxxsemaphore
 
 ## Build
 ```
-git submodule init
-git submodule update
-mkdir build
-cd build
-cmake .. -DCMAKE_CXX_COMPILER=$(which clang++) -DCMAKE_BUILD_TYPE=Release -DCLANG_FORMAT=OFF -DCOMPILER_WARNINGS=OFF
-cmake --build . 
+cmake -B build . -DCMAKE_CXX_COMPILER=$(which clang++) -DCMAKE_BUILD_TYPE=Release -DCLANG_FORMAT=OFF -DCOMPILER_WARNINGS=OFF
+cmake --build build 
 ```
 
 ## Use
 ```
 dump_shm <shm_name>
 ```
-

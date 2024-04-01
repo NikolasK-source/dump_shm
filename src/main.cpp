@@ -3,46 +3,39 @@
  * This program is free software. You can redistribute it and/or modify it under the terms of the MIT License.
  */
 
+#include "generated/version_info.hpp"
 #include "license.hpp"
 
 #include "cxxsemaphore.hpp"
 #include "cxxshm.hpp"
+#include <cxxopts.hpp>
 #include <filesystem>
 #include <iostream>
 #include <sysexits.h>
 
-// cxxopts, but all warnings disabled
-#ifdef COMPILER_CLANG
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Weverything"
-#elif defined(COMPILER_GCC)
-#    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Wall"
-#endif
-
-#include <cxxopts.hpp>
-
-#ifdef COMPILER_CLANG
-#    pragma clang diagnostic pop
-#elif defined(COMPILER_GCC)
-#    pragma GCC diagnostic pop
-#endif
+//! Help output line width
+static constexpr std::size_t HELP_WIDTH = 120;
 
 int main(int argc, char **argv) {
-    const std::string exe_name = std::filesystem::path(argv[0]).filename().string();
+    const std::string exe_name = std::filesystem::path(*argv).filename().string();
     cxxopts::Options  options(exe_name, "Dump the content of a shared memory to stdout");
 
-    options.add_options()("b,bytes", "limit number of bytes to output", cxxopts::value<std::size_t>());
-    options.add_options()(
+    options.add_options("shared memory")("b,bytes", "limit number of bytes to output", cxxopts::value<std::size_t>());
+    options.add_options("shared memory")(
             "o,offset", "do not output the leading arg bytes", cxxopts::value<std::size_t>()->default_value("0"));
-    options.add_options()("s,semaphore",
-                          "protect the shared memory with an existing named semaphore against simultaneous access",
-                          cxxopts::value<std::string>());
-    options.add_options()("h,help", "print usage");
-    options.add_options()("version", "print version information");
-    options.add_options()("license", "show licences");
+    options.add_options("shared memory")(
+            "s,semaphore",
+            "protect the shared memory with an existing named semaphore against simultaneous access",
+            cxxopts::value<std::string>());
+    options.add_options("other")("h,help", "print usage");
+    options.add_options("version information")("version", "print version and exit");
+    options.add_options("version information")("longversion",
+                                               "print version (including compiler and system info) and exit");
+    options.add_options("version information")("shortversion", "print version (only version string) and exit");
+    options.add_options("version information")("git-hash", "print git hash");
+    options.add_options("other")("license", "show licences");
 
-    options.add_options()("shmname", "name of the shared memory to dump", cxxopts::value<std::string>());
+    options.add_options("shared memory")("shmname", "name of the shared memory to dump", cxxopts::value<std::string>());
     options.parse_positional({"shmname"});
     options.positional_help("SHM_NAME");
 
@@ -50,25 +43,57 @@ int main(int argc, char **argv) {
     try {
         opts = options.parse(argc, argv);
     } catch (const std::exception &e) {
-        std::cerr << "Failed to parse arguments: " << e.what() << std::endl;
-        std::cerr << "Use --help for more information." << std::endl;
+        std::cerr << "Failed to parse arguments: " << e.what() << '\n';
+        std::cerr << "Use --help for more information." << '\n';
         return EX_USAGE;
     }
 
     if (opts.count("help")) {
-        options.set_width(120);
-        std::cout << options.help() << std::endl;
-        std::cout << std::endl;
-        std::cout << "This application uses the following libraries:" << std::endl;
-        std::cout << "  - cxxopts by jarro2783 (https://github.com/jarro2783/cxxopts)" << std::endl;
-        std::cout << "  - cxxshm (https://github.com/NikolasK-source/cxxshm)" << std::endl;
-        std::cout << "  - cxxsemaphore (https://github.com/NikolasK-source/cxxsemaphore)" << std::endl;
+        options.set_width(HELP_WIDTH);
+        std::cout << options.help() << '\n';
+        std::cout << '\n';
+        std::cout << "This application uses the following libraries:" << '\n';
+        std::cout << "  - cxxopts by jarro2783 (https://github.com/jarro2783/cxxopts)" << '\n';
+        std::cout << "  - cxxshm (https://github.com/NikolasK-source/cxxshm)" << '\n';
+        std::cout << "  - cxxsemaphore (https://github.com/NikolasK-source/cxxsemaphore)" << '\n';
+        return EX_OK;
+    }
+
+    // print version
+    if (opts.count("longversion")) {
+        std::cout << PROJECT_NAME << ' ' << PROJECT_VERSION << " (compiled with " << COMPILER_INFO << " on "
+                  << SYSTEM_INFO << ')'
+#ifndef OS_LINUX
+                  << "-nonlinux"
+#endif
+                  << '\n';
+        return EX_OK;
+    }
+
+    if (opts.count("shortversion")) {
+        std::cout << PROJECT_VERSION << '\n';
         return EX_OK;
     }
 
     if (opts.count("version")) {
-        std::cout << PROJECT_NAME << ' ' << PROJECT_VERSION << " (compiled with " << COMPILER_INFO << " on "
-                  << SYSTEM_INFO << ')' << std::endl;
+        std::cout << PROJECT_NAME << ' ' << PROJECT_VERSION << '\n';
+        return EX_OK;
+    }
+
+    if (opts.count("longversion")) {
+        std::cout << PROJECT_NAME << ' ' << PROJECT_VERSION << '\n';
+        std::cout << "   compiled with " << COMPILER_INFO << '\n';
+        std::cout << "   on system " << SYSTEM_INFO
+#ifndef OS_LINUX
+                  << "-nonlinux"
+#endif
+                  << '\n';
+        std::cout << "   from git commit " << RCS_HASH << '\n';
+        return EX_OK;
+    }
+
+    if (opts.count("git-hash")) {
+        std::cout << RCS_HASH << '\n';
         return EX_OK;
     }
 
@@ -78,8 +103,8 @@ int main(int argc, char **argv) {
     }
 
     if (!opts.count("shmname")) {
-        std::cerr << "Shared memory name is mandatory." << std::endl;
-        std::cerr << "Use --help for more information." << std::endl;
+        std::cerr << "Shared memory name is mandatory." << '\n';
+        std::cerr << "Use --help for more information." << '\n';
         return EX_USAGE;
     }
 
@@ -89,7 +114,7 @@ int main(int argc, char **argv) {
     try {
         shared_memory = std::make_unique<cxxshm::SharedMemory>(name, true);
     } catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << e.what() << '\n';
         return EX_SOFTWARE;
     }
 
@@ -98,7 +123,7 @@ int main(int argc, char **argv) {
         try {
             semaphore = std::make_unique<cxxsemaphore::Semaphore>(opts["semaphore"].as<std::string>());
         } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
+            std::cerr << e.what() << '\n';
             return EX_SOFTWARE;
         }
     }
