@@ -3,6 +3,7 @@
  * This program is free software. You can redistribute it and/or modify it under the terms of the MIT License.
  */
 
+#include "generated/version_info.hpp"
 #include "license.hpp"
 
 #include "cxxsemaphore.hpp"
@@ -19,17 +20,22 @@ int main(int argc, char **argv) {
     const std::string exe_name = std::filesystem::path(*argv).filename().string();
     cxxopts::Options  options(exe_name, "Dump the content of a shared memory to stdout");
 
-    options.add_options()("b,bytes", "limit number of bytes to output", cxxopts::value<std::size_t>());
-    options.add_options()(
+    options.add_options("shared memory")("b,bytes", "limit number of bytes to output", cxxopts::value<std::size_t>());
+    options.add_options("shared memory")(
             "o,offset", "do not output the leading arg bytes", cxxopts::value<std::size_t>()->default_value("0"));
-    options.add_options()("s,semaphore",
-                          "protect the shared memory with an existing named semaphore against simultaneous access",
-                          cxxopts::value<std::string>());
-    options.add_options()("h,help", "print usage");
-    options.add_options()("version", "print version information");
-    options.add_options()("license", "show licences");
+    options.add_options("shared memory")(
+            "s,semaphore",
+            "protect the shared memory with an existing named semaphore against simultaneous access",
+            cxxopts::value<std::string>());
+    options.add_options("other")("h,help", "print usage");
+    options.add_options("version information")("version", "print version and exit");
+    options.add_options("version information")("longversion",
+                                               "print version (including compiler and system info) and exit");
+    options.add_options("version information")("shortversion", "print version (only version string) and exit");
+    options.add_options("version information")("git-hash", "print git hash");
+    options.add_options("other")("license", "show licences");
 
-    options.add_options()("shmname", "name of the shared memory to dump", cxxopts::value<std::string>());
+    options.add_options("shared memory")("shmname", "name of the shared memory to dump", cxxopts::value<std::string>());
     options.parse_positional({"shmname"});
     options.positional_help("SHM_NAME");
 
@@ -53,9 +59,41 @@ int main(int argc, char **argv) {
         return EX_OK;
     }
 
-    if (opts.count("version")) {
+    // print version
+    if (opts.count("longversion")) {
         std::cout << PROJECT_NAME << ' ' << PROJECT_VERSION << " (compiled with " << COMPILER_INFO << " on "
-                  << SYSTEM_INFO << ')' << '\n';
+                  << SYSTEM_INFO << ')'
+#ifndef OS_LINUX
+                  << "-nonlinux"
+#endif
+                  << '\n';
+        return EX_OK;
+    }
+
+    if (opts.count("shortversion")) {
+        std::cout << PROJECT_VERSION << '\n';
+        return EX_OK;
+    }
+
+    if (opts.count("version")) {
+        std::cout << PROJECT_NAME << ' ' << PROJECT_VERSION << '\n';
+        return EX_OK;
+    }
+
+    if (opts.count("longversion")) {
+        std::cout << PROJECT_NAME << ' ' << PROJECT_VERSION << '\n';
+        std::cout << "   compiled with " << COMPILER_INFO << '\n';
+        std::cout << "   on system " << SYSTEM_INFO
+#ifndef OS_LINUX
+                  << "-nonlinux"
+#endif
+                  << '\n';
+        std::cout << "   from git commit " << RCS_HASH << '\n';
+        return EX_OK;
+    }
+
+    if (opts.count("git-hash")) {
+        std::cout << RCS_HASH << '\n';
         return EX_OK;
     }
 
