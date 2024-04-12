@@ -11,10 +11,8 @@
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <iostream>
+#include <sys/ioctl.h>
 #include <sysexits.h>
-
-//! Help output line width
-static constexpr std::size_t HELP_WIDTH = 120;
 
 int main(int argc, char **argv) {
     const std::string exe_name = std::filesystem::path(*argv).filename().string();
@@ -49,7 +47,16 @@ int main(int argc, char **argv) {
     }
 
     if (opts.count("help")) {
-        options.set_width(HELP_WIDTH);
+        static constexpr std::size_t MIN_HELP_SIZE = 80;
+        if (isatty(STDIN_FILENO)) {
+            struct winsize w {};
+            if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) != -1) {  // NOLINT
+                options.set_width(std::max(static_cast<decltype(w.ws_col)>(MIN_HELP_SIZE), w.ws_col));
+            }
+        } else {
+            options.set_width(MIN_HELP_SIZE);
+        }
+
         std::cout << options.help() << '\n';
         std::cout << '\n';
         std::cout << "This application uses the following libraries:" << '\n';
@@ -60,16 +67,6 @@ int main(int argc, char **argv) {
     }
 
     // print version
-    if (opts.count("longversion")) {
-        std::cout << PROJECT_NAME << ' ' << PROJECT_VERSION << " (compiled with " << COMPILER_INFO << " on "
-                  << SYSTEM_INFO << ')'
-#ifndef OS_LINUX
-                  << "-nonlinux"
-#endif
-                  << '\n';
-        return EX_OK;
-    }
-
     if (opts.count("shortversion")) {
         std::cout << PROJECT_VERSION << '\n';
         return EX_OK;

@@ -26,7 +26,13 @@ jobs:
 
     - name: install cxxopts
       run: |
-        sudo apt install libcxxopts-dev
+        git clone https://github.com/jarro2783/cxxopts.git tmp/cxxopts
+        cd tmp/cxxopts
+        git checkout $(git tag | grep -P '^v\d+\.\d+\.\d+$' | sort | tail -1)
+        cmake -B build . -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCLANG_FORMAT=OFF -DCOMPILER_WARNINGS=OFF -DCLANG_TIDY=OFF
+        cmake --build build
+        sudo cmake --install build
+        cd -
 
     - name: install cxxshm
       run: |
