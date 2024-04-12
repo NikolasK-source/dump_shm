@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.22.0 FATAL_ERROR)
 # ======================================================================================================================
 
 # project
-project(dump-shm LANGUAGES CXX VERSION 1.3.0)
+project(dump-shm LANGUAGES CXX VERSION 1.3.1)
 
 # settings
 set(Target "dump-shm")    # Executable name (without file extension!)
